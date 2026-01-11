@@ -19,8 +19,8 @@ APP_DIR = Path(".")  # keep .pkl files next to this script
 # -----------------------------
 @st.cache_resource
 def load_model():
-    model = joblib.load("all_models.pkl")  
-    return model
+    model_path = Path(__file__).parent / "model" / "all_models.pkl"
+    return joblib.load(model_path)
 
 model = load_model()
 
