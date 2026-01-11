@@ -17,34 +17,32 @@ APP_DIR = Path(".")  # keep .pkl files next to this script
 # -----------------------------
 # Load trained model
 # -----------------------------
-@st.cache_resource
-def load_model():
-    model_path = Path(__file__).parent / "model" / "all_models.pkl"
-    return joblib.load(model_path)
+from pathlib import Path
+import joblib
+import streamlit as st
 
-model = load_model()
+APP_DIR = Path(__file__).parent
+MODEL_DIR = APP_DIR / "model"
 
+# Paths to artifacts saved from the notebook
+ALL_MODELS_FILE = MODEL_DIR / "all_models.pkl"
+FEATURE_COLS_FILE = MODEL_DIR / "feature_columns.pkl"
+SCALER_FILE = MODEL_DIR / "scaler.pkl"
+PREPROC_META_FILE = MODEL_DIR / "preprocess_meta.pkl"
 
-# Required artifacts saved from the notebook
-FEATURE_COLS_FILE = "feature_columns.pkl"     # list[str] : exact X columns used in training
-SCALER_FILE = "scaler.pkl"                    # fitted StandardScaler (used for KNN/NB in notebook)
-PREPROC_META_FILE = "preprocess_meta.pkl"     # dict with {"min_balance": <float>} used in balance_log
-
-
-# -----------------------------
-# Load artifacts 
-# -----------------------------
 @st.cache_resource
 def load_artifacts():
-    models = {}
-    for name, fname in model.items():
-        models[name] = joblib.load(APP_DIR / fname)
+    # all_models.pkl should be a dict like:
+    # {"Logistic Regression": model_LR, "Decision Tree": dt_model, ...}
+    models = joblib.load(ALL_MODELS_FILE)
 
-    feature_cols = joblib.load(APP_DIR / FEATURE_COLS_FILE)
-    scaler = joblib.load(APP_DIR / SCALER_FILE)
-    meta = joblib.load(APP_DIR / PREPROC_META_FILE)
+    feature_cols = joblib.load(FEATURE_COLS_FILE)     # list of column names
+    scaler = joblib.load(SCALER_FILE)                 # StandardScaler
+    meta = joblib.load(PREPROC_META_FILE)             # {"min_balance": ...}
 
     return models, feature_cols, scaler, meta
+
+models, feature_cols, scaler, meta = load_artifacts()
 
 
 def build_feature_vector(raw_row: dict, feature_cols: list[str], meta: dict) -> pd.DataFrame:
@@ -108,7 +106,8 @@ except Exception as e:
 
 # Sidebar: model selection + inputs
 st.sidebar.header("Model Selection")
-selected_model_name = st.sidebar.selectbox("Choose classifier", list(MODEL_FILES.keys()), index=0)
+selected_model_name = st.selectbox("Choose classifier", list(models.keys()))
+model = models[selected_model_name]
 
 st.sidebar.header("Client Inputs")
 
