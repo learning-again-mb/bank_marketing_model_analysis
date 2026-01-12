@@ -254,7 +254,7 @@ st.dataframe(styled, use_container_width=True, hide_index=True)
 from sklearn.metrics import confusion_matrix, classification_report
 
 X_TEST_FILE = MODEL_DIR / "X_test.pkl"
-Y_TEST_FILE = MODEL_DIR / "/Y_test.pkl"
+Y_TEST_FILE = MODEL_DIR / "Y_test.pkl"
 
 @st.cache_resource
 def load_test_data():
