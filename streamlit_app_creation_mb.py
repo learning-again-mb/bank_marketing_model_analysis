@@ -206,9 +206,42 @@ def load_metrics():
 metrics_df = load_metrics()
 
 st.subheader("📊 Metrics Comparison (Test Set)")
+
+# Convert to percentage and round
 show_df = metrics_df.copy()
 for col in ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]:
     show_df[col] = (show_df[col] * 100).round(2)
 
-st.dataframe(show_df, use_container_width=True)
+# Add ID column starting from 1
+show_df.insert(0, "ID", range(1, len(show_df) + 1))
+
+# Find max values per metric
+max_vals = {
+    col: show_df[col].max()
+    for col in ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]
+}
+
+# Styling function
+def style_table(df):
+    styled = df.style
+
+    # Bold column headers
+    styled = styled.set_table_styles([
+        {"selector": "th", "props": [("font-weight", "bold")]}
+    ])
+
+    # Highlight max values in bold green
+    for col, max_val in max_vals.items():
+        styled = styled.apply(
+            lambda x: [
+                "color: green; font-weight: bold" if v == max_val else ""
+                for v in x
+            ],
+            subset=[col]
+        )
+
+    return styled
+
+# Display styled table
+st.dataframe(style_table(show_df), use_container_width=True)
 
