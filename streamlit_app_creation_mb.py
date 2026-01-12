@@ -192,3 +192,23 @@ if predict_btn:
     st.dataframe(X_input)
 else:
     st.info("Fill the details on the left sidebar and click **Predict Subscription**.")
+    
+# Model Comparison
+
+APP_DIR = Path(__file__).parent
+MODEL_DIR = APP_DIR / "model"
+METRICS_FILE = MODEL_DIR / "metrics_comparison.pkl"
+
+@st.cache_resource
+def load_metrics():
+    return joblib.load(METRICS_FILE)
+
+metrics_df = load_metrics()
+
+st.subheader("📊 Metrics Comparison (Test Set)")
+show_df = metrics_df.copy()
+for col in ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]:
+    show_df[col] = (show_df[col] * 100).round(2)
+
+st.dataframe(show_df, use_container_width=True)
+
