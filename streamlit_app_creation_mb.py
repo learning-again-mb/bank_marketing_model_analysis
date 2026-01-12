@@ -345,25 +345,25 @@ plt.close(fig)
 
 
 # Classification Report
-st.markdown("**Classification Report**")
-report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-report_df = pd.DataFrame(report_dict).transpose()
+#st.markdown("**Classification Report**")
+#report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+#report_df = pd.DataFrame(report_dict).transpose()
 
 # nicer formatting
-report_df = report_df.rename(columns={
-    "precision": "Precision",
-    "recall": "Recall",
-    "f1-score": "F1-score",
-    "support": "Support"
-})
-for col in ["Precision", "Recall", "F1-score"]:
-    if col in report_df.columns:
-        report_df[col] = report_df[col].astype(float).round(3)
+#report_df = report_df.rename(columns={
+#    "precision": "Precision",
+#    "recall": "Recall",
+#   "f1-score": "F1-score",
+#    "support": "Support"
+#})
+#for col in ["Precision", "Recall", "F1-score"]:
+#   if col in report_df.columns:
+#       report_df[col] = report_df[col].astype(float).round(3)
 
-st.dataframe(report_df, use_container_width=True)
+#st.dataframe(report_df, use_container_width=True)
 
 # Optional: show raw text version too
-with st.expander("Show classification_report() text output"):
-    st.code(classification_report(y_test, y_pred, zero_division=0))
+#with st.expander("Show classification_report() text output"):
+#    st.code(classification_report(y_test, y_pred, zero_division=0))
 
 
