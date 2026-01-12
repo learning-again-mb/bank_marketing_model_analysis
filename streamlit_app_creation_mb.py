@@ -249,3 +249,62 @@ styled = (
 # Remove index column and show table
 st.dataframe(styled, use_container_width=True, hide_index=True)
 
+# Display consusion matrix and classification report
+
+from sklearn.metrics import confusion_matrix, classification_report
+
+X_TEST_FILE = MODEL_DIR / "X_test.pkl"
+Y_TEST_FILE = MODEL_DIR / "/Y_test.pkl"
+
+@st.cache_resource
+def load_test_data():
+    X_test = joblib.load(X_TEST_FILE)
+    y_test = joblib.load(Y_TEST_FILE)
+    return X_test, y_test
+
+X_test, y_test = load_test_data()
+
+st.subheader("🧾 Model Diagnostics (Test Set)")
+
+# Choose which model to evaluate (same keys as your models dict)
+eval_model_name = st.selectbox("Select model for evaluation", list(models.keys()), key="eval_model")
+eval_model = models[eval_model_name]
+
+# Some models in your notebook may need scaling (KNN/NB) — use your scaler if applicable
+needs_scaling = eval_model_name in ["K-Nearest Neighbours", "Naive Bayes (Gaussian)"]
+
+X_eval = scaler.transform(X_test) if needs_scaling else X_test
+
+# Predictions
+y_pred = eval_model.predict(X_eval)
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+cm_df = pd.DataFrame(cm, index=["Actual No", "Actual Yes"], columns=["Pred No", "Pred Yes"])
+
+st.markdown("**Confusion Matrix**")
+st.dataframe(cm_df, use_container_width=True)
+
+# Classification Report
+st.markdown("**Classification Report**")
+report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+report_df = pd.DataFrame(report_dict).transpose()
+
+# nicer formatting
+report_df = report_df.rename(columns={
+    "precision": "Precision",
+    "recall": "Recall",
+    "f1-score": "F1-score",
+    "support": "Support"
+})
+for col in ["Precision", "Recall", "F1-score"]:
+    if col in report_df.columns:
+        report_df[col] = report_df[col].astype(float).round(3)
+
+st.dataframe(report_df, use_container_width=True)
+
+# Optional: show raw text version too
+with st.expander("Show classification_report() text output"):
+    st.code(classification_report(y_test, y_pred, zero_division=0))
+
+
