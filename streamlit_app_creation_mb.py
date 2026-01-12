@@ -195,6 +195,12 @@ else:
     
 # Model Comparison
 
+from pathlib import Path
+import joblib
+import streamlit as st
+import pandas as pd
+import numpy as np
+
 APP_DIR = Path(__file__).parent
 MODEL_DIR = APP_DIR / "model"
 METRICS_FILE = MODEL_DIR / "metrics_comparison.pkl"
@@ -207,41 +213,36 @@ metrics_df = load_metrics()
 
 st.subheader("📊 Metrics Comparison (Test Set)")
 
-# Convert to percentage and round
+# ---- Prepare table ----
 show_df = metrics_df.copy()
-for col in ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]:
-    show_df[col] = (show_df[col] * 100).round(2)
 
-# Add ID column starting from 1
+# Convert to percentage and round to 2 decimals for display
+metric_cols = ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]
+for col in metric_cols:
+    show_df[col] = (show_df[col].astype(float) * 100).round(2)
+
+# Insert ID 1..N
 show_df.insert(0, "ID", range(1, len(show_df) + 1))
 
-# Find max values per metric
-max_vals = {
-    col: show_df[col].max()
-    for col in ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]
-}
+# ---- Styling: bold headers + green bold maxima in each metric column ----
+def highlight_max_per_column(df: pd.DataFrame) -> pd.DataFrame:
+    styles = pd.DataFrame("", index=df.index, columns=df.columns)
+    for col in metric_cols:
+        max_val = df[col].max()
+        mask = np.isclose(df[col].to_numpy(dtype=float), float(max_val), rtol=0, atol=1e-9)
+        styles.loc[mask, col] = "color: green; font-weight: 700;"
+    return styles
 
-# Styling function
-def style_table(df):
-    styled = df.style
-
-    # Bold column headers
-    styled = styled.set_table_styles([
-        {"selector": "th", "props": [("font-weight", "bold")]}
+styled = (
+    show_df.style
+    # Bold headers (targets multiple header selectors Streamlit respects better)
+    .set_table_styles([
+        {"selector": "thead th", "props": [("font-weight", "700")]},
+        {"selector": "th",       "props": [("font-weight", "700")]}
     ])
+    # Apply max highlighting for all metric columns
+    .apply(highlight_max_per_column, axis=None)
+)
 
-    # Highlight max values in bold green
-    for col, max_val in max_vals.items():
-        styled = styled.apply(
-            lambda x: [
-                "color: green; font-weight: bold" if v == max_val else ""
-                for v in x
-            ],
-            subset=[col]
-        )
-
-    return styled
-
-# Display styled table
-st.dataframe(style_table(show_df), use_container_width=True)
-
+# IMPORTANT: hide the index to remove the extra column before ID
+st.dataframe(styled, use_container_width=True, hide_index=True)
