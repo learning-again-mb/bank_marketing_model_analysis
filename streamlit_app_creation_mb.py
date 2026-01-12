@@ -196,6 +196,12 @@ else:
 # Model Comparison
 
 
+from pathlib import Path
+import joblib
+import streamlit as st
+import pandas as pd
+import numpy as np
+
 APP_DIR = Path(__file__).parent
 MODEL_DIR = APP_DIR / "model"
 METRICS_FILE = MODEL_DIR / "metrics_comparison.pkl"
@@ -212,20 +218,34 @@ st.subheader("📊 Metrics Comparison (Test Set)")
 show_df = metrics_df.copy()
 metric_cols = ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]
 
-# Convert to % and format to 2 decimals with %
+# Convert to % with 2 decimals
 for col in metric_cols:
     show_df[col] = (show_df[col].astype(float) * 100).round(2).astype(str) + "%"
 
-# Insert ID 1..N
+# Add ID column (1 to 6)
 show_df.insert(0, "ID", range(1, len(show_df) + 1))
 
-# ---- Styling ----
+# ---- Styling: highlight max per column ----
 def highlight_max_per_column(df):
     styles = pd.DataFrame("", index=df.index, columns=df.columns)
 
     for col in metric_cols:
-        # Extract numeric values for comparison
         numeric_vals = df[col].str.replace("%", "").astype(float)
         max_val = numeric_vals.max()
 
-        styles.loc[num]()
+        styles.loc[numeric_vals == max_val, col] = "color: green; font-weight: 700;"
+
+    return styles
+
+styled = (
+    show_df.style
+    .set_table_styles([
+        {"selector": "thead th", "props": [("font-weight", "700")]},
+        {"selector": "th", "props": [("font-weight", "700")]}
+    ])
+    .apply(highlight_max_per_column, axis=None)
+)
+
+# Remove index column and show table
+st.dataframe(styled, use_container_width=True, hide_index=True)
+
