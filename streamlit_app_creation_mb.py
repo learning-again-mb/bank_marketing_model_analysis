@@ -195,11 +195,6 @@ else:
     
 # Model Comparison
 
-from pathlib import Path
-import joblib
-import streamlit as st
-import pandas as pd
-import numpy as np
 
 APP_DIR = Path(__file__).parent
 MODEL_DIR = APP_DIR / "model"
@@ -215,34 +210,22 @@ st.subheader("📊 Metrics Comparison (Test Set)")
 
 # ---- Prepare table ----
 show_df = metrics_df.copy()
-
-# Convert to percentage and round to 2 decimals for display
 metric_cols = ["Accuracy", "Precision", "Recall", "F1", "ROC", "MCC"]
+
+# Convert to % and format to 2 decimals with %
 for col in metric_cols:
-    show_df[col] = (show_df[col].astype(float) * 100).round(2)
+    show_df[col] = (show_df[col].astype(float) * 100).round(2).astype(str) + "%"
 
 # Insert ID 1..N
 show_df.insert(0, "ID", range(1, len(show_df) + 1))
 
-# ---- Styling: bold headers + green bold maxima in each metric column ----
-def highlight_max_per_column(df: pd.DataFrame) -> pd.DataFrame:
+# ---- Styling ----
+def highlight_max_per_column(df):
     styles = pd.DataFrame("", index=df.index, columns=df.columns)
+
     for col in metric_cols:
-        max_val = df[col].max()
-        mask = np.isclose(df[col].to_numpy(dtype=float), float(max_val), rtol=0, atol=1e-9)
-        styles.loc[mask, col] = "color: green; font-weight: 700;"
-    return styles
+        # Extract numeric values for comparison
+        numeric_vals = df[col].str.replace("%", "").astype(float)
+        max_val = numeric_vals.max()
 
-styled = (
-    show_df.style
-    # Bold headers (targets multiple header selectors Streamlit respects better)
-    .set_table_styles([
-        {"selector": "thead th", "props": [("font-weight", "700")]},
-        {"selector": "th",       "props": [("font-weight", "700")]}
-    ])
-    # Apply max highlighting for all metric columns
-    .apply(highlight_max_per_column, axis=None)
-)
-
-# IMPORTANT: hide the index to remove the extra column before ID
-st.dataframe(styled, use_container_width=True, hide_index=True)
+        styles.loc[num]()
