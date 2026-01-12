@@ -267,23 +267,81 @@ X_test, y_test = load_test_data()
 st.subheader("🧾 Model Diagnostics (Test Set)")
 
 # Choose which model to evaluate (same keys as your models dict)
-eval_model_name = st.selectbox("Select model for evaluation", list(models.keys()), key="eval_model")
-eval_model = models[eval_model_name]
+#eval_model_name = st.selectbox("Select model for evaluation", list(models.keys()), key="eval_model")
+#eval_model = models[eval_model_name]
 
 # Some models in your notebook may need scaling (KNN/NB) — use your scaler if applicable
-needs_scaling = eval_model_name in ["K-Nearest Neighbours", "Naive Bayes (Gaussian)"]
+#needs_scaling = eval_model_name in ["K-Nearest Neighbours", "Naive Bayes (Gaussian)"]
+st.write(f"Selected model for diagnostics: **{selected_model_name}**")
+
+eval_model = models[selected_model_name]
+needs_scaling = selected_model_name in ["K-Nearest Neighbours", "Naive Bayes (Gaussian)"]
 
 X_eval = scaler.transform(X_test) if needs_scaling else X_test
-
-# Predictions
 y_pred = eval_model.predict(X_eval)
 
-# Confusion Matrix
-cm = confusion_matrix(y_test, y_pred)
-cm_df = pd.DataFrame(cm, index=["Actual No", "Actual Yes"], columns=["Pred No", "Pred Yes"])
 
-st.markdown("**Confusion Matrix**")
-st.dataframe(cm_df, use_container_width=True)
+# Confusion Matrix
+# -----------------------------
+# Confusion Matrix (Color-coded + FP/FN highlighted)
+# -----------------------------
+st.markdown("**Confusion Matrix (highlighting FP/FN)**")
+
+# Robust label handling (works for y in {"no","yes"} or {0,1})
+y_vals = list(pd.Series(y_test).unique())
+
+if "yes" in y_vals and "no" in y_vals:
+    neg_label, pos_label = "no", "yes"
+elif 1 in y_vals and 0 in y_vals:
+    neg_label, pos_label = 0, 1
+else:
+    neg_label = y_vals[0]
+    pos_label = y_vals[1] if len(y_vals) > 1 else y_vals[0]
+
+cm = confusion_matrix(y_test, y_pred, labels=[neg_label, pos_label])
+tn, fp, fn, tp = cm.ravel()
+
+# FP/FN highlight summary cards
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("TN", int(tn))
+c2.metric("FP (False Positives)", int(fp))
+c3.metric("FN (False Negatives)", int(fn))
+c4.metric("TP", int(tp))
+
+# Plot confusion matrix
+fig, ax = plt.subplots(figsize=(5.5, 4.2))
+ax.imshow(cm, interpolation="nearest")
+
+ax.set_xticks([0, 1])
+ax.set_yticks([0, 1])
+ax.set_xticklabels(["Pred No", "Pred Yes"])
+ax.set_yticklabels(["Actual No", "Actual Yes"])
+ax.set_xlabel("Predicted")
+ax.set_ylabel("Actual")
+ax.set_title("Confusion Matrix")
+
+labels = np.array([["TN", "FP"], ["FN", "TP"]])
+for i in range(2):
+    for j in range(2):
+        val = cm[i, j]
+        tag = labels[i, j]
+
+        # Highlight FP (0,1) and FN (1,0)
+        if (i, j) in [(0, 1), (1, 0)]:
+            bbox = dict(boxstyle="round,pad=0.3", edgecolor="red", facecolor="none", linewidth=2)
+        else:
+            bbox = None
+
+        ax.text(j, i, f"{tag}\n{val}", ha="center", va="center", fontsize=12, bbox=bbox)
+
+# Rates (optional but useful)
+fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+st.caption(f"FPR (FP rate) = {fpr:.3f} | FNR (FN rate) = {fnr:.3f}")
+
+st.pyplot(fig)
+plt.close(fig)
+
 
 # Classification Report
 st.markdown("**Classification Report**")
